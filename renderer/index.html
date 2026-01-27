@@ -235,28 +235,62 @@
           <!-- Deploy Key Tab -->
           <div class="guide-panel" id="tab-deploy">
             <h4>將公鑰部署到遠端電腦</h4>
-            <p>複製下方公鑰內容，貼到遠端電腦的 <code>C:\Users\使用者\.ssh\authorized_keys</code> 檔案中。</p>
 
+            <div class="tip-box warning">
+              <strong>⚠️ 重要：管理員帳戶</strong>
+              <p>如果遠端使用者是<strong>管理員帳戶</strong>，公鑰必須放在：</p>
+              <code>C:\ProgramData\ssh\administrators_authorized_keys</code>
+              <p style="margin-top: 8px;">（不是 C:\Users\使用者\.ssh\authorized_keys）</p>
+            </div>
+
+            <h5>步驟一：複製公鑰</h5>
             <div class="public-key-container" id="publicKeyContainer">
               <div class="loading">載入公鑰...</div>
             </div>
 
-            <div class="tip-box warning">
-              <strong>⚠️ 注意：</strong>
-              <ul>
-                <li>若 <code>.ssh</code> 資料夾不存在，請手動建立</li>
-                <li>若 <code>authorized_keys</code> 檔案不存在，請建立新檔案</li>
-                <li>每行放一個公鑰，可以有多個公鑰</li>
-              </ul>
-            </div>
+            <h5>步驟二：在遠端電腦執行以下指令</h5>
+            <p>以<strong>管理員身份</strong>開啟 PowerShell，依序執行：</p>
 
-            <h5>使用指令部署（進階）</h5>
             <div class="code-block">
               <div class="code-header">
-                <span>一鍵部署到遠端（需要輸入密碼一次）</span>
+                <span>1. 建立 ssh 目錄（如果不存在）</span>
+                <button class="btn-copy"
+                  data-copy="New-Item -Path 'C:\ProgramData\ssh' -ItemType Directory -Force">複製</button>
               </div>
-              <code
-                id="deployCommand">type $env:USERPROFILE\.ssh\id_rsa.pub | ssh 使用者@IP "mkdir -Force ~\.ssh; Add-Content ~\.ssh\authorized_keys"</code>
+              <code>New-Item -Path 'C:\ProgramData\ssh' -ItemType Directory -Force</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>2. 建立空白的 authorized_keys 檔案</span>
+                <button class="btn-copy"
+                  data-copy="New-Item -Path 'C:\ProgramData\ssh\administrators_authorized_keys' -ItemType File -Force">複製</button>
+              </div>
+              <code>New-Item -Path 'C:\ProgramData\ssh\administrators_authorized_keys' -ItemType File -Force</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>3. 用記事本開啟並貼上公鑰</span>
+                <button class="btn-copy"
+                  data-copy="notepad C:\ProgramData\ssh\administrators_authorized_keys">複製</button>
+              </div>
+              <code>notepad C:\ProgramData\ssh\administrators_authorized_keys</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>4. 設定正確的檔案權限（必要！）</span>
+                <button class="btn-copy"
+                  data-copy="icacls 'C:\ProgramData\ssh\administrators_authorized_keys' /inheritance:r /grant 'SYSTEM:F' /grant 'Administrators:F'">複製</button>
+              </div>
+              <code>icacls 'C:\ProgramData\ssh\administrators_authorized_keys' /inheritance:r /grant 'SYSTEM:F' /grant 'Administrators:F'</code>
+            </div>
+
+            <div class="tip-box">
+              <strong>💡 一般使用者帳戶：</strong>
+              <p>如果遠端使用者不是管理員，則公鑰放在：</p>
+              <code>C:\Users\使用者名稱\.ssh\authorized_keys</code>
             </div>
           </div>
         </div>
