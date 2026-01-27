@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
+  <title>塔克小工具 / 內網檔案批次傳輸</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="app-container">
+
+    <!-- Sidebar: Host Management -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>🖥️ 遠端主機</h2>
+        <button class="btn-icon" id="addHostBtn" title="新增主機">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="host-list" id="hostList">
+        <!-- Hosts will be rendered here -->
+        <div class="empty-state" id="emptyHostState">
+          <span class="icon">📡</span>
+          <p>尚無遠端主機</p>
+          <p class="hint">點擊 + 新增主機</p>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn-secondary" id="sshGuideBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          SSH 設定指南
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Transfer Batches Section -->
+      <section class="transfer-section">
+        <div class="section-header">
+          <h1>📦 傳輸任務</h1>
+          <div class="header-actions">
+            <button class="btn-primary" id="addBatchBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              新增批次
+            </button>
+            <button class="btn-accent" id="startTransferBtn" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              開始傳輸
+            </button>
+          </div>
+        </div>
+
+        <div class="batches-container" id="batchesContainer">
+          <!-- Batches will be rendered here -->
+          <div class="empty-batch-state" id="emptyBatchState">
+            <div class="empty-icon">📂</div>
+            <h3>尚無傳輸任務</h3>
+            <p>點擊「新增批次」開始設定檔案傳輸</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Transfer Progress Section (hidden by default) -->
+      <section class="progress-section hidden" id="progressSection">
+        <div class="section-header">
+          <h2>⏳ 傳輸進度</h2>
+          <button class="btn-danger" id="cancelTransferBtn">取消傳輸</button>
+        </div>
+        <div class="progress-container" id="progressContainer">
+          <!-- Progress items will be rendered here -->
+        </div>
+        <div class="transfer-summary hidden" id="transferSummary">
+          <!-- Summary will be rendered here -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Host Edit Modal -->
+    <div class="modal-overlay hidden" id="hostModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="hostModalTitle">新增遠端主機</h3>
+          <button class="btn-icon modal-close" id="closeHostModal">&times;</button>
+        </div>
+        <form class="modal-body" id="hostForm">
+          <div class="form-group">
+            <label for="hostName">主機名稱</label>
+            <input type="text" id="hostName" placeholder="例如: 工作站1" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="hostIP">IP 位址</label>
+              <input type="text" id="hostIP" placeholder="192.168.25.70" required pattern="^(\d{1,3}\.){3}\d{1,3}$">
+            </div>
+            <div class="form-group flex-1">
+              <label for="hostPort">Port</label>
+              <input type="number" id="hostPort" value="22" min="1" max="65535">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="hostUser">使用者名稱</label>
+            <input type="text" id="hostUser" placeholder="YOUR USER NAME" required>
+          </div>
+          <div class="form-group">
+            <label for="hostDefaultPath">預設目標路徑</label>
+            <input type="text" id="hostDefaultPath" placeholder="D:/" value="D:/">
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="testConnectionBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              測試連線
+            </button>
+            <div class="connection-status" id="connectionStatus"></div>
+          </div>
+          <input type="hidden" id="hostId">
+        </form>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="cancelHostBtn">取消</button>
+          <button type="submit" class="btn-primary" id="saveHostBtn">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SSH Guide Modal -->
+    <div class="modal-overlay hidden" id="sshGuideModal">
+      <div class="modal modal-lg">
+        <div class="modal-header">
+          <h3>🔐 SSH 設定指南</h3>
+          <button class="btn-icon modal-close" id="closeSshGuide">&times;</button>
+        </div>
+        <div class="modal-body guide-content">
+          <div class="guide-tabs">
+            <button class="guide-tab active" data-tab="remote">遠端電腦設定</button>
+            <button class="guide-tab" data-tab="local">本機金鑰設定</button>
+            <button class="guide-tab" data-tab="deploy">部署公鑰</button>
+          </div>
+
+          <!-- Remote Setup Tab -->
+          <div class="guide-panel active" id="tab-remote">
+            <h4>在遠端電腦安裝 OpenSSH Server</h4>
+            <p>以<strong>管理員身份</strong>開啟 PowerShell，執行以下指令：</p>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>1. 安裝 OpenSSH Server</span>
+                <button class="btn-copy"
+                  data-copy="Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0">複製</button>
+              </div>
+              <code>Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>2. 啟動 SSH 服務</span>
+                <button class="btn-copy" data-copy="Start-Service sshd">複製</button>
+              </div>
+              <code>Start-Service sshd</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>3. 設定開機自動啟動</span>
+                <button class="btn-copy" data-copy="Set-Service -Name sshd -StartupType 'Automatic'">複製</button>
+              </div>
+              <code>Set-Service -Name sshd -StartupType 'Automatic'</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>4. 確認防火牆規則（通常安裝時會自動設定）</span>
+                <button class="btn-copy" data-copy="Get-NetFirewallRule -Name *ssh*">複製</button>
+              </div>
+              <code>Get-NetFirewallRule -Name *ssh*</code>
+            </div>
+
+            <div class="tip-box">
+              <strong>💡 提示：</strong>若防火牆規則不存在，執行：<br>
+              <code>New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22</code>
+            </div>
+          </div>
+
+          <!-- Local Key Setup Tab -->
+          <div class="guide-panel" id="tab-local">
+            <h4>在本機生成 SSH 金鑰</h4>
+            <p>設定金鑰後，可實現<strong>免密碼</strong>自動傳輸。</p>
+
+            <div class="key-status" id="keyStatus">
+              <div class="loading">檢查金鑰狀態...</div>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>手動生成指令（在 PowerShell 執行）</span>
+                <button class="btn-copy" data-copy="ssh-keygen -t rsa -b 4096">複製</button>
+              </div>
+              <code>ssh-keygen -t rsa -b 4096</code>
+            </div>
+
+            <button class="btn-primary" id="generateKeyBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              自動生成金鑰
+            </button>
+          </div>
+
+          <!-- Deploy Key Tab -->
+          <div class="guide-panel" id="tab-deploy">
+            <h4>將公鑰部署到遠端電腦</h4>
+            <p>複製下方公鑰內容，貼到遠端電腦的 <code>C:\Users\使用者\.ssh\authorized_keys</code> 檔案中。</p>
+
+            <div class="public-key-container" id="publicKeyContainer">
+              <div class="loading">載入公鑰...</div>
+            </div>
+
+            <div class="tip-box warning">
+              <strong>⚠️ 注意：</strong>
+              <ul>
+                <li>若 <code>.ssh</code> 資料夾不存在，請手動建立</li>
+                <li>若 <code>authorized_keys</code> 檔案不存在，請建立新檔案</li>
+                <li>每行放一個公鑰，可以有多個公鑰</li>
+              </ul>
+            </div>
+
+            <h5>使用指令部署（進階）</h5>
+            <div class="code-block">
+              <div class="code-header">
+                <span>一鍵部署到遠端（需要輸入密碼一次）</span>
+              </div>
+              <code
+                id="deployCommand">type $env:USERPROFILE\.ssh\id_rsa.pub | ssh 使用者@IP "mkdir -Force ~\.ssh; Add-Content ~\.ssh\authorized_keys"</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Template (hidden) -->
+  <template id="batchTemplate">
+    <div class="batch-card" data-batch-id="">
+      <div class="batch-header">
+        <span class="batch-number">批次 #1</span>
+        <button class="btn-icon btn-remove-batch" title="刪除批次">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="batch-content">
+        <!-- File Drop Zone -->
+        <div class="file-zone">
+          <div class="drop-zone">
+            <div class="drop-icon">📁</div>
+            <p>拖放檔案至此處</p>
+            <span class="hint">或點擊選擇檔案</span>
+          </div>
+          <div class="file-list">
+            <!-- Files will be rendered here -->
+          </div>
+        </div>
+
+        <!-- Target Configuration -->
+        <div class="target-zone">
+          <div class="target-header">
+            <h4>目標設定</h4>
+            <label class="toggle-label">
+              <input type="checkbox" class="use-same-path" checked>
+              <span>使用相同路徑</span>
+            </label>
+          </div>
+          <div class="same-path-input">
+            <input type="text" class="target-path-all" placeholder="輸入統一目標路徑 (例如: D:/images/)">
+          </div>
+          <div class="host-targets">
+            <!-- Host checkboxes will be rendered here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "local2other",
+  "version": "1.0.0",
+  "description": "SSH/SCP 檔案傳輸工具 - 將本地檔案傳送至多台內網遠端電腦",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "author": "TK",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "ssh2": "^1.15.0"
+  }
+}
