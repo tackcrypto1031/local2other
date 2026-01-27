@@ -1,6 +1,8 @@
 # local2other - SSH/SCP Multi-Host File Transfer Tool
 # local2other - SSH/SCP 多主機檔案傳輸工具
 
+![local2other Sample](https://raw.githubusercontent.com/tackcrypto1031/local2other/main/sample/sample.png)
+
 `local2other` is a modern SSH/SCP file transfer tool built with Electron, designed to streamline the process of sending local files to multiple remote computers within a local network.
 `local2other` 是一款基於 Electron 開發的現代化 SSH/SCP 檔案傳輸工具，旨在簡化將本地檔案傳送至內網中多台遠端電腦的過程。
 
