@@ -84,13 +84,16 @@ class Local2Other {
         const emptyState = document.getElementById('emptyHostState');
 
         if (this.hosts.length === 0) {
-            emptyState.classList.remove('hidden');
-            hostList.innerHTML = '';
-            hostList.appendChild(emptyState);
+            if (emptyState) {
+                emptyState.classList.remove('hidden');
+                hostList.innerHTML = '';
+            }
             return;
         }
 
-        emptyState.classList.add('hidden');
+        if (emptyState) {
+            emptyState.classList.add('hidden');
+        }
 
         const hostsHtml = this.hosts.map(host => `
       <div class="host-card" data-host-id="${host.id}">
@@ -229,29 +232,28 @@ class Local2Other {
             this.hosts.push(hostData);
         }
 
-        await window.api.saveHosts(this.hosts);
-        this.renderHosts();
-        this.closeHostModal();
+        try {
+            await window.api.saveHosts(this.hosts);
+            this.renderHosts();
+            this.closeHostModal();
+        } catch (error) {
+            console.error('Error in saveHost:', error);
+            alert('儲存時發生錯誤：' + error.message);
+        }
     }
 
     async deleteHost(hostId) {
-        console.log('deleteHost called with id:', hostId);
-        console.log('Current hosts:', this.hosts);
+        if (!confirm('確定要刪除此主機嗎？')) return;
 
-        if (!confirm('確定要刪除此主機嗎？')) {
-            console.log('User cancelled delete');
-            return;
-        }
-
-        console.log('User confirmed delete');
-        const beforeCount = this.hosts.length;
         this.hosts = this.hosts.filter(h => h.id !== hostId);
-        console.log('After filter, hosts count:', beforeCount, '->', this.hosts.length);
 
-        await window.api.saveHosts(this.hosts);
-        console.log('Hosts saved');
-        this.renderHosts();
-        console.log('Hosts re-rendered');
+        try {
+            await window.api.saveHosts(this.hosts);
+            this.renderHosts();
+        } catch (error) {
+            console.error('Error in deleteHost:', error);
+            alert('刪除時發生錯誤：' + error.message);
+        }
     }
 
     async testConnection() {
