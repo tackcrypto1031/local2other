@@ -672,8 +672,9 @@ class Local2Other {
               <span>總計</span>
             </div>
           </div>
-          <button class="btn-secondary" onclick="app.closeProgressSection()">關閉</button>
+          <button class="btn-secondary" id="closeProgressBtn">關閉</button>
         `;
+                document.getElementById('closeProgressBtn').addEventListener('click', () => this.closeProgressSection());
                 break;
         }
     }

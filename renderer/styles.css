@@ -228,6 +228,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .section-header {
@@ -258,6 +259,7 @@ body {
 .batches-container {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
   padding: var(--spacing-lg);
   display: flex;
   flex-direction: column;
@@ -476,6 +478,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .host-target-item {
