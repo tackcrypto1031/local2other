@@ -9,6 +9,7 @@ class Local2Other {
         this.batches = [];
         this.batchIdCounter = 0;
         this.isTransferring = false;
+        this.lastTestResult = null;  // Track connection test result
 
         this.init();
     }
@@ -16,6 +17,14 @@ class Local2Other {
     async init() {
         // Load saved hosts
         this.hosts = await window.api.getHosts() || [];
+
+        // Cleanup: Remove hosts that were saved without successful connection test
+        const originalCount = this.hosts.length;
+        this.hosts = this.hosts.filter(host => host.tested === true);
+        if (this.hosts.length !== originalCount) {
+            await window.api.saveHosts(this.hosts);
+            console.log(`Cleaned up ${originalCount - this.hosts.length} untested host(s)`);
+        }
 
         // Initialize UI
         this.bindEvents();
@@ -33,9 +42,8 @@ class Local2Other {
         document.getElementById('cancelHostBtn').addEventListener('click', () => this.closeHostModal());
         document.getElementById('saveHostBtn').addEventListener('click', () => this.saveHost());
         document.getElementById('testConnectionBtn').addEventListener('click', () => this.testConnection());
-        document.getElementById('hostModal').addEventListener('click', (e) => {
-            if (e.target.id === 'hostModal') this.closeHostModal();
-        });
+        // Removed: backdrop click to close modal
+        // Users must click X button or Cancel to close the modal
 
         // Batch management
         document.getElementById('addBatchBtn').addEventListener('click', () => this.addBatch());
@@ -141,6 +149,7 @@ class Local2Other {
         form.reset();
         status.textContent = '';
         status.className = 'connection-status';
+        this.lastTestResult = null;  // Reset test result when opening modal
 
         if (hostId) {
             const host = this.hosts.find(h => h.id === hostId);
@@ -179,20 +188,44 @@ class Local2Other {
             status: ''
         };
 
-        // Validate
+        // Validate required fields
         if (!hostData.name || !hostData.ip || !hostData.user) {
             alert('請填寫必要欄位');
             return;
         }
 
         if (hostId) {
-            // Update existing
+            // Editing existing host
+            const existingHost = this.hosts.find(h => h.id === parseInt(hostId));
+
+            // Check if connection details changed
+            const connectionChanged = existingHost && (
+                existingHost.ip !== hostData.ip ||
+                existingHost.port !== hostData.port ||
+                existingHost.user !== hostData.user
+            );
+
+            // If connection details changed, require new test
+            if (connectionChanged && (!this.lastTestResult || !this.lastTestResult.success)) {
+                alert('連線資訊已變更，請先成功測試連線後再儲存');
+                return;
+            }
+
+            // Preserve tested status if connection details didn't change, or mark as tested if new test passed
+            hostData.tested = connectionChanged ? true : (existingHost?.tested || false);
+
+            // Update existing host
             const index = this.hosts.findIndex(h => h.id === parseInt(hostId));
             if (index !== -1) {
                 this.hosts[index] = hostData;
             }
         } else {
-            // Add new
+            // Adding new host - require successful connection test
+            if (!this.lastTestResult || !this.lastTestResult.success) {
+                alert('請先成功測試連線後再儲存主機');
+                return;
+            }
+            hostData.tested = true;
             this.hosts.push(hostData);
         }
 
@@ -202,11 +235,23 @@ class Local2Other {
     }
 
     async deleteHost(hostId) {
-        if (!confirm('確定要刪除此主機嗎？')) return;
+        console.log('deleteHost called with id:', hostId);
+        console.log('Current hosts:', this.hosts);
 
+        if (!confirm('確定要刪除此主機嗎？')) {
+            console.log('User cancelled delete');
+            return;
+        }
+
+        console.log('User confirmed delete');
+        const beforeCount = this.hosts.length;
         this.hosts = this.hosts.filter(h => h.id !== hostId);
+        console.log('After filter, hosts count:', beforeCount, '->', this.hosts.length);
+
         await window.api.saveHosts(this.hosts);
+        console.log('Hosts saved');
         this.renderHosts();
+        console.log('Hosts re-rendered');
     }
 
     async testConnection() {
@@ -231,6 +276,7 @@ class Local2Other {
 
         try {
             const result = await window.api.testConnection(host);
+            this.lastTestResult = result;  // Store test result
 
             status.textContent = result.message;
             status.className = `connection-status ${result.success ? 'success' : 'error'}`;
@@ -239,6 +285,7 @@ class Local2Other {
                 status.innerHTML += ' <a href="#" onclick="app.openSshGuide(); return false;">查看設定指南</a>';
             }
         } catch (error) {
+            this.lastTestResult = { success: false };  // Mark as failed
             status.textContent = `測試失敗: ${error.message}`;
             status.className = 'connection-status error';
         }

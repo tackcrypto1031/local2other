@@ -76,6 +76,34 @@ To enable file transfers, the remote computer must have an SSH server running an
 6.  **Transfer**: Hit the transfer button and watch the progress!
     **傳輸**：按下傳輸按鈕，即可查看進度！
 
+## ⚠️ Important: SSH Account Configuration / 重要：SSH 帳戶配置
+
+### Domain Account vs Local Account / 網域帳戶 vs 本機帳戶
+
+**Important**: When connecting to Windows computers joined to a domain, you **MUST use a local account**, NOT a domain account.
+**重要**：連接加入網域的 Windows 電腦時，**必須使用本機帳戶**，而非網域帳戶。
+
+| Account Type / 帳戶類型 | Example / 範例 | SSH Support / SSH 支援 |
+|---|---|---|
+| Local Account / 本機帳戶 | `auer`, `Administrator` | ✅ Works / 可用 |
+| Domain Account / 網域帳戶 | `DOMAIN\username`, `user@domain.com` | ❌ Not supported / 不支援 |
+
+#### Why? / 為什麼？
+Windows OpenSSH service cannot create authentication tokens for domain users (S4U authentication limitation).
+Windows OpenSSH 服務無法為網域用戶創建認證 Token（S4U 認證限制）。
+
+#### How to find local accounts / 如何查找本機帳戶
+Run on the remote machine / 在遠端機器上執行:
+```powershell
+net user
+```
+
+#### Troubleshooting Steps / 疑難排解步驟
+1.  Stop sshd service / 停止 sshd 服務: `Stop-Service sshd`
+2.  Run in debug mode / 以除錯模式運行: `& "C:\Windows\System32\OpenSSH\sshd.exe" -d`
+3.  In another terminal, try to connect / 在另一個終端嘗試連線
+4.  Check the debug output for errors / 檢查除錯輸出中的錯誤訊息
+
 ## ⌨️ Development Scripts / 開發指令
 
 *   `npm start`: Run the application in production mode.

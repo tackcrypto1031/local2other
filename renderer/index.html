@@ -143,7 +143,7 @@
         </form>
         <div class="modal-footer">
           <button type="button" class="btn-secondary" id="cancelHostBtn">取消</button>
-          <button type="submit" class="btn-primary" id="saveHostBtn">儲存</button>
+          <button type="button" class="btn-primary" id="saveHostBtn">儲存</button>
         </div>
       </div>
     </div>
@@ -160,6 +160,7 @@
             <button class="guide-tab active" data-tab="remote">遠端電腦設定</button>
             <button class="guide-tab" data-tab="local">本機金鑰設定</button>
             <button class="guide-tab" data-tab="deploy">部署公鑰</button>
+            <button class="guide-tab" data-tab="troubleshoot">疑難排解</button>
           </div>
 
           <!-- Remote Setup Tab -->
@@ -291,6 +292,75 @@
               <strong>💡 一般使用者帳戶：</strong>
               <p>如果遠端使用者不是管理員，則公鑰放在：</p>
               <code>C:\Users\使用者名稱\.ssh\authorized_keys</code>
+            </div>
+          </div>
+
+          <!-- Troubleshooting Tab -->
+          <div class="guide-panel" id="tab-troubleshoot">
+            <h4>SSH 連線疑難排解</h4>
+
+            <div class="tip-box warning">
+              <strong>⚠️ 重要：必須使用本機帳戶</strong>
+              <p>當遠端電腦加入網域時，<strong>必須使用本機帳戶</strong>，不能使用網域帳戶。</p>
+              <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+                <tr style="background: rgba(0,0,0,0.2);">
+                  <th style="padding: 8px; text-align: left;">帳戶類型</th>
+                  <th style="padding: 8px; text-align: left;">範例</th>
+                  <th style="padding: 8px; text-align: left;">支援</th>
+                </tr>
+                <tr>
+                  <td style="padding: 8px;">本機帳戶</td>
+                  <td style="padding: 8px;"><code>auer</code>, <code>Administrator</code></td>
+                  <td style="padding: 8px;">✅ 可用</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px;">網域帳戶</td>
+                  <td style="padding: 8px;"><code>DOMAIN\user</code>, <code>user@domain.com</code></td>
+                  <td style="padding: 8px;">❌ 不支援</td>
+                </tr>
+              </table>
+              <p style="margin-top: 10px;"><strong>原因：</strong>Windows OpenSSH 服務無法為網域用戶創建認證 Token（S4U 認證限制）。</p>
+            </div>
+
+            <h5>如何查找本機帳戶</h5>
+            <div class="code-block">
+              <div class="code-header">
+                <span>在遠端電腦執行</span>
+                <button class="btn-copy" data-copy="net user">複製</button>
+              </div>
+              <code>net user</code>
+            </div>
+
+            <h5>進階除錯步驟</h5>
+            <p>如果連線仍然失敗，可以啟動 sshd 除錯模式查看詳細錯誤：</p>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>1. 停止 sshd 服務</span>
+                <button class="btn-copy" data-copy="Stop-Service sshd">複製</button>
+              </div>
+              <code>Stop-Service sshd</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>2. 以除錯模式啟動</span>
+                <button class="btn-copy" data-copy="& 'C:\Windows\System32\OpenSSH\sshd.exe' -d">複製</button>
+              </div>
+              <code>& 'C:\Windows\System32\OpenSSH\sshd.exe' -d</code>
+            </div>
+
+            <div class="code-block">
+              <div class="code-header">
+                <span>3. 在另一個終端測試連線</span>
+                <button class="btn-copy" data-copy="ssh user@192.168.x.x 'echo SUCCESS'">複製</button>
+              </div>
+              <code>ssh user@192.168.x.x 'echo SUCCESS'</code>
+            </div>
+
+            <div class="tip-box">
+              <strong>💡 提示：</strong>
+              <p>查看 sshd -d 視窗的輸出，可以看到詳細的認證過程和錯誤訊息。</p>
             </div>
           </div>
         </div>
